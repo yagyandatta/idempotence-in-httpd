@@ -1,0 +1,6 @@
+dvd_path: /dvd
+repo_file: yum-repo
+doc_root: "/var/www/sonu"
+conf_file: "arth.conf"
+webpage: "index.html"
+port: "8080"

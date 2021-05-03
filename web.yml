@@ -1,0 +1,72 @@
+- name: "idempotence in httpd"
+  hosts: name
+  vars_files:
+  - http_vars.yml
+  tasks:
+  - name: "Creating Mount Point"
+    file:
+        path: "{{ dvd_path }}"
+        state: directory
+
+  - name: "Mounting CD rom to directory"
+    mount:
+        src: "/dev/cdrom"
+        path: "{{ dvd_path }}"
+        fstype: "iso9660"
+        state: mounted
+
+  - name: " Creating yum repo for appstream" 
+    yum_repository:
+        name: "appstream"
+        file: "{{ repo_file }}"
+        baseurl: "file:///{{ dvd_path }}/AppStream"
+        description: "this is app repo"
+        gpgcheck: no
+
+  - name: " Creting yum repo for baseos" 
+    yum_repository:
+        name: "baseos"
+        file: "{{ repo_file }}"
+        description: "This is baseos repo"
+        baseurl: "file:///{{ dvd_path }}/BaseOS"
+        gpgcheck: no
+
+  - name: "Installing httpd software"
+    package:
+        name: "httpd"
+        state: present
+ 
+  - name: "Creating Document root"
+    file:
+        path: "{{ doc_root }}"
+        state: directory
+
+  - name: "Copying the Config file"
+    template:
+        src: "{{ conf_file }}"
+        dest: "/etc/httpd/conf.d/{{ conf_file }}"
+    notify:
+        - restart_service
+
+  - name: "Copying web pages to document Root"
+    copy:
+        src: "{{ webpage }}"
+        dest: "{{ doc_root }}/{{ webpage }}"
+
+  - name: "Starting services" 
+    service:
+        name: "httpd"
+        enabled: yes
+        state: started
+
+  - name: "Enabling firewall to allow port"  
+    firewalld:
+        port: "{{ port }}/tcp"
+        state: enabled
+        permanent: yes
+        immediate: yes
+  handlers:  
+  - name: restart_service
+    service: 
+        name: "httpd"
+        state: restarted
